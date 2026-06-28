@@ -1,5 +1,6 @@
-package com.example.librarymanager
+package com.example.librarymanager.ui.components
 
+import com.example.librarymanager.ui.theme.*
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -137,14 +138,6 @@ import com.example.librarymanager.ui.theme.LibraryManagerTheme
 import com.example.librarymanager.ui.auth.AuthScreen
 import com.example.librarymanager.ui.auth.ForgotPasswordScreen
 import com.example.librarymanager.ui.components.*
-import com.example.librarymanager.ui.dashboard.DashboardScreen
-import com.example.librarymanager.ui.dashboard.DrawerScreen
-import com.example.librarymanager.ui.expenses.EditExpenseScreen
-import com.example.librarymanager.ui.expenses.ExpenseDetailSheet
-import com.example.librarymanager.ui.expenses.ExpensesScreen
-import com.example.librarymanager.ui.library.ModuleScreen
-import com.example.librarymanager.ui.members.MemberManagementScreen
-import com.example.librarymanager.ui.seats.SeatMatrixScreen
 import com.example.librarymanager.ui.splash.SplashScreen
 import com.example.librarymanager.ui.theme.*
 import com.example.librarymanager.viewmodel.AuthUiState
@@ -157,153 +150,30 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.abs
 
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1f)) {
-                LibraryManagerTheme(darkTheme = false, dynamicColor = false) {
-                    GoLibraryApp()
-                }
-            }
-        }
-    }
-}
-
-private enum class Page {
-    Splash,
-    Login,
-    ForgotPassword,
-    Dashboard,
-    Seats,
-    Members,
-    Expenses,
-    EditExpense,
-    Module
-}
-
 
 @Composable
-private fun GoLibraryApp() {
-    val authViewModel: AuthViewModel = viewModel()
-    val sessionExpired by ApiClient.sessionExpired.collectAsStateWithLifecycle()
-    val currentUser by ApiClient.currentUser.collectAsStateWithLifecycle()
-    val backStack = remember { mutableStateListOf(Page.Splash) }
-    val page = backStack.last()
-    var selectedExpense by remember { mutableStateOf<Expense?>(null) }
-    var editingExpense by remember { mutableStateOf<Expense?>(null) }
-    var moduleTitle by remember { mutableStateOf("Module") }
-    var drawerOpen by remember { mutableStateOf(false) }
-
-    fun navigate(destination: Page) {
-        if (backStack.lastOrNull() != destination) backStack.add(destination)
-    }
-
-    fun replaceRoot(destination: Page) {
-        backStack.clear()
-        backStack.add(destination)
-    }
-
-    fun goBack() {
-        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-    }
-
-    fun openModule(title: String) {
-        if (title == "Member Management" || title == "Add Member") {
-            navigate(Page.Members)
-            return
-        }
-        moduleTitle = title
-        navigate(Page.Module)
-    }
-
-    fun openFromDrawer(destination: Page) {
-        drawerOpen = false
-        navigate(destination)
-    }
-
-    LaunchedEffect(sessionExpired) {
-        if (sessionExpired) {
-            replaceRoot(Page.Login)
-            ApiClient.consumeSessionExpiry()
-        }
-    }
-
-    BackHandler(enabled = drawerOpen || selectedExpense != null || backStack.size > 1) {
-        when {
-            drawerOpen -> drawerOpen = false
-            selectedExpense != null -> selectedExpense = null
-            else -> goBack()
-        }
-    }
-
-    Box(
+internal fun AppBar(title: String, onBack: () -> Unit) {
+    Row(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
+            .fillMaxWidth()
+            .height(74.dp)
+            .background(orangeGradient())
+            .statusBarsPadding()
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        when (page) {
-            Page.Splash -> SplashScreen(onDone = { replaceRoot(Page.Login) })
-            Page.Login -> AuthScreen(
-                viewModel = authViewModel,
-                onLogin = { replaceRoot(Page.Dashboard) },
-                onForgotPassword = { navigate(Page.ForgotPassword) },
-                onOpenModule = ::openModule
-            )
-            Page.ForgotPassword -> ForgotPasswordScreen(
-                viewModel = authViewModel,
-                onBack = ::goBack,
-                onOpenHelp = { openModule("Need Help?") }
-            )
-            Page.Dashboard -> DashboardScreen(
-                onMenu = { drawerOpen = true },
-                onSeats = { navigate(Page.Seats) },
-                onExpenses = { navigate(Page.Expenses) },
-                onOpenModule = ::openModule
-            )
-            Page.Seats -> SeatMatrixScreen(onBack = ::goBack)
-            Page.Members -> MemberManagementScreen(onBack = ::goBack)
-            Page.Expenses -> ExpensesScreen(
-                onBack = ::goBack,
-                onAdd = {
-                    editingExpense = null
-                    navigate(Page.EditExpense)
-                },
-                onEdit = {
-                    editingExpense = it
-                    navigate(Page.EditExpense)
-                },
-                onView = { selectedExpense = it },
-                onOpenModule = ::openModule
-            )
-            Page.EditExpense -> EditExpenseScreen(
-                expense = editingExpense,
-                onBack = ::goBack
-            )
-            Page.Module -> ModuleScreen(title = moduleTitle, onBack = ::goBack)
-        }
-
-        selectedExpense?.let {
-            ExpenseDetailSheet(expense = it, onClose = { selectedExpense = null })
-        }
-
-        DrawerScreen(
-            visible = drawerOpen,
-            user = currentUser,
-            onBack = { drawerOpen = false },
-            onLogout = {
-                drawerOpen = false
-                authViewModel.signOut()
-                replaceRoot(Page.Login)
-            },
-            onSeats = { openFromDrawer(Page.Seats) },
-            onExpenses = { openFromDrawer(Page.Expenses) },
-            onOpenModule = {
-                drawerOpen = false
-                openModule(it)
-            }
+        Text("<", color = Color.White, fontSize = 28.sp, modifier = Modifier.clickable { onBack() })
+        Text(
+            title,
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 18.dp)
         )
     }
 }
+

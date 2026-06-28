@@ -1,5 +1,7 @@
-package com.example.librarymanager
+package com.example.librarymanager.ui.library
 
+import com.example.librarymanager.ui.components.*
+import com.example.librarymanager.ui.theme.*
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -137,14 +139,6 @@ import com.example.librarymanager.ui.theme.LibraryManagerTheme
 import com.example.librarymanager.ui.auth.AuthScreen
 import com.example.librarymanager.ui.auth.ForgotPasswordScreen
 import com.example.librarymanager.ui.components.*
-import com.example.librarymanager.ui.dashboard.DashboardScreen
-import com.example.librarymanager.ui.dashboard.DrawerScreen
-import com.example.librarymanager.ui.expenses.EditExpenseScreen
-import com.example.librarymanager.ui.expenses.ExpenseDetailSheet
-import com.example.librarymanager.ui.expenses.ExpensesScreen
-import com.example.librarymanager.ui.library.ModuleScreen
-import com.example.librarymanager.ui.members.MemberManagementScreen
-import com.example.librarymanager.ui.seats.SeatMatrixScreen
 import com.example.librarymanager.ui.splash.SplashScreen
 import com.example.librarymanager.ui.theme.*
 import com.example.librarymanager.viewmodel.AuthUiState
@@ -157,153 +151,64 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.abs
 
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1f)) {
-                LibraryManagerTheme(darkTheme = false, dynamicColor = false) {
-                    GoLibraryApp()
-                }
-            }
-        }
-    }
-}
-
-private enum class Page {
-    Splash,
-    Login,
-    ForgotPassword,
-    Dashboard,
-    Seats,
-    Members,
-    Expenses,
-    EditExpense,
-    Module
-}
-
 
 @Composable
-private fun GoLibraryApp() {
-    val authViewModel: AuthViewModel = viewModel()
-    val sessionExpired by ApiClient.sessionExpired.collectAsStateWithLifecycle()
-    val currentUser by ApiClient.currentUser.collectAsStateWithLifecycle()
-    val backStack = remember { mutableStateListOf(Page.Splash) }
-    val page = backStack.last()
-    var selectedExpense by remember { mutableStateOf<Expense?>(null) }
-    var editingExpense by remember { mutableStateOf<Expense?>(null) }
-    var moduleTitle by remember { mutableStateOf("Module") }
-    var drawerOpen by remember { mutableStateOf(false) }
+internal fun ModuleScreen(title: String, onBack: () -> Unit) {
+    var input by remember(title) { mutableStateOf("") }
+    var status by remember(title) { mutableStateOf("") }
 
-    fun navigate(destination: Page) {
-        if (backStack.lastOrNull() != destination) backStack.add(destination)
-    }
-
-    fun replaceRoot(destination: Page) {
-        backStack.clear()
-        backStack.add(destination)
-    }
-
-    fun goBack() {
-        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
-    }
-
-    fun openModule(title: String) {
-        if (title == "Member Management" || title == "Add Member") {
-            navigate(Page.Members)
-            return
-        }
-        moduleTitle = title
-        navigate(Page.Module)
-    }
-
-    fun openFromDrawer(destination: Page) {
-        drawerOpen = false
-        navigate(destination)
-    }
-
-    LaunchedEffect(sessionExpired) {
-        if (sessionExpired) {
-            replaceRoot(Page.Login)
-            ApiClient.consumeSessionExpiry()
-        }
-    }
-
-    BackHandler(enabled = drawerOpen || selectedExpense != null || backStack.size > 1) {
-        when {
-            drawerOpen -> drawerOpen = false
-            selectedExpense != null -> selectedExpense = null
-            else -> goBack()
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        when (page) {
-            Page.Splash -> SplashScreen(onDone = { replaceRoot(Page.Login) })
-            Page.Login -> AuthScreen(
-                viewModel = authViewModel,
-                onLogin = { replaceRoot(Page.Dashboard) },
-                onForgotPassword = { navigate(Page.ForgotPassword) },
-                onOpenModule = ::openModule
-            )
-            Page.ForgotPassword -> ForgotPasswordScreen(
-                viewModel = authViewModel,
-                onBack = ::goBack,
-                onOpenHelp = { openModule("Need Help?") }
-            )
-            Page.Dashboard -> DashboardScreen(
-                onMenu = { drawerOpen = true },
-                onSeats = { navigate(Page.Seats) },
-                onExpenses = { navigate(Page.Expenses) },
-                onOpenModule = ::openModule
-            )
-            Page.Seats -> SeatMatrixScreen(onBack = ::goBack)
-            Page.Members -> MemberManagementScreen(onBack = ::goBack)
-            Page.Expenses -> ExpensesScreen(
-                onBack = ::goBack,
-                onAdd = {
-                    editingExpense = null
-                    navigate(Page.EditExpense)
-                },
-                onEdit = {
-                    editingExpense = it
-                    navigate(Page.EditExpense)
-                },
-                onView = { selectedExpense = it },
-                onOpenModule = ::openModule
-            )
-            Page.EditExpense -> EditExpenseScreen(
-                expense = editingExpense,
-                onBack = ::goBack
-            )
-            Page.Module -> ModuleScreen(title = moduleTitle, onBack = ::goBack)
-        }
-
-        selectedExpense?.let {
-            ExpenseDetailSheet(expense = it, onClose = { selectedExpense = null })
-        }
-
-        DrawerScreen(
-            visible = drawerOpen,
-            user = currentUser,
-            onBack = { drawerOpen = false },
-            onLogout = {
-                drawerOpen = false
-                authViewModel.signOut()
-                replaceRoot(Page.Login)
-            },
-            onSeats = { openFromDrawer(Page.Seats) },
-            onExpenses = { openFromDrawer(Page.Expenses) },
-            onOpenModule = {
-                drawerOpen = false
-                openModule(it)
+    Column(Modifier.fillMaxSize().background(Color(0xFFF6F8FC))) {
+        AppBar(title = title, onBack = onBack)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    IconBubble(title.take(2).uppercase(), RoyalBlue, 46.dp)
+                    Text(title, color = DeepNavy, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "This module is connected to the Geeta Library navigation and is ready for data entry.",
+                        color = Muted,
+                        fontSize = 14.sp
+                    )
+                }
             }
-        )
+
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it },
+                label = { Text("Enter details") },
+                minLines = 3,
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = RoyalBlue, cursorColor = RoyalBlue),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            AuthPrimaryButton(
+                text = if (title.contains("Export")) "Generate $title" else "Save & Continue",
+                onClick = {
+                    status = if (input.isBlank()) "Please enter details first" else "$title updated successfully"
+                }
+            )
+
+            if (status.isNotBlank()) {
+                Text(
+                    status,
+                    color = if (status.startsWith("Please")) Color(0xFFC83A32) else Green,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+        }
     }
 }
+
