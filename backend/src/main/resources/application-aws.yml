@@ -1,0 +1,24 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: ${DB_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: false
+
+server:
+  error:
+    include-message: never
+
+app:
+  aws:
+    iam-db-auth: true
+    region: ${AWS_REGION:ap-south-1}
+    database:
+      host: ${DB_HOST}
+      port: ${DB_PORT:5432}
+      name: ${DB_NAME:postgres}
+      username: ${DB_USERNAME:postgres}
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}

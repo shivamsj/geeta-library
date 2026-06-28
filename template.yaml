@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Geeta Library serverless backend with API Gateway, Lambda and external Aurora PostgreSQL Express.
+
+Parameters:
+  StageName:
+    Type: String
+    Default: prod
+  DatabaseHost:
+    Type: String
+  DatabasePort:
+    Type: String
+    Default: '5432'
+  DatabaseName:
+    Type: String
+    Default: postgres
+  DatabaseUsername:
+    Type: String
+    Default: postgres
+  DatabaseResourceId:
+    Type: String
+    Description: Aurora DB cluster resource id for IAM database authentication.
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+
+Globals:
+  Function:
+    Runtime: java17
+    Architectures:
+      - x86_64
+    Timeout: 60
+    MemorySize: 2048
+
+Resources:
+  GeetaHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref StageName
+
+  BackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend/target/geeta-library-lambda.zip
+      Handler: com.geetalibrary.backend.lambda.StreamLambdaHandler::handleRequest
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rds-db:connect
+              Resource: !Sub 'arn:aws:rds-db:${AWS::Region}:${AWS::AccountId}:dbuser:${DatabaseResourceId}/${DatabaseUsername}'
+      Environment:
+        Variables:
+          SPRING_PROFILES_ACTIVE: aws
+          STAGE_NAME: !Ref StageName
+          DB_HOST: !Ref DatabaseHost
+          DB_PORT: !Ref DatabasePort
+          DB_NAME: !Ref DatabaseName
+          DB_USERNAME: !Ref DatabaseUsername
+          DB_POOL_SIZE: '2'
+          DB_MIN_IDLE: '0'
+          JWT_SECRET: !Ref JwtSecret
+      Events:
+        RootApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GeetaHttpApi
+            Path: /
+            Method: ANY
+            PayloadFormatVersion: '1.0'
+        ProxyApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GeetaHttpApi
+            Path: /{proxy+}
+            Method: ANY
+            PayloadFormatVersion: '1.0'
+
+Outputs:
+  ApiBaseUrl:
+    Description: Android GEETA_API_BASE_URL value
+    Value: !Sub 'https://${GeetaHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/api/'
+  HealthUrl:
+    Description: Health endpoint
+    Value: !Sub 'https://${GeetaHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/api/health'
+  DatabaseEndpoint:
+    Description: External Aurora PostgreSQL Express endpoint
+    Value: !Ref DatabaseHost

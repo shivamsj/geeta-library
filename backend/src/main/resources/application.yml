@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: geeta-library-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/geeta_library?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  address: 0.0.0.0
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:Z2VldGEtbGlicmFyeS1kZXZlbG9wbWVudC1zZWNyZXQta2V5LWNoYW5nZS1pbi1wcm9kdWN0aW9u}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
