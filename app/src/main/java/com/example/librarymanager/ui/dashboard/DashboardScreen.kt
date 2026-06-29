@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -72,6 +73,7 @@ import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventAvailable
@@ -159,6 +161,13 @@ private data class DashboardCardData(
     val icon: String
 )
 
+private data class HomeMenuItem(
+    val label: String,
+    val icon: ImageVector,
+    val selected: Boolean = false,
+    val onClick: () -> Unit
+)
+
 
 @Composable
 internal fun DashboardScreen(
@@ -200,35 +209,49 @@ internal fun DashboardScreen(
         DashboardCardData("Today Anniversaries", "0", RoyalBlue, "ANN")
     )
 
-    Column(Modifier.fillMaxSize().background(Color.White)) {
-        HomeTopBar(onMenu = onMenu, onSeats = onSeats, onOpenModule = onOpenModule)
-        HeroBanner()
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 102.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(cards) { card ->
-                DashboardCard(card = card, onClick = {
-                    when {
-                        card.title.contains("Expense") -> onExpenses()
-                        card.title.contains("Member") -> onOpenModule("Member Management")
-                        card.title.contains("Collection") -> onOpenModule("Collections")
-                        card.title.contains("Check-in") -> onOpenModule("Attendance")
-                        card.title.contains("Reminder") -> onOpenModule("Reminders")
-                        card.title.contains("Due") -> onOpenModule("Due Amount")
-                        card.title.contains("Follow") -> onOpenModule("Follow-ups")
-                        card.title.contains("Enquiry") -> onOpenModule("Enquiry Management")
-                        card.title.contains("Birthday") -> onOpenModule("Birthdays")
-                        card.title.contains("Anniversar") -> onOpenModule("Anniversaries")
-                        else -> onOpenModule(card.title)
-                    }
-                })
+    Box(Modifier.fillMaxSize().background(Color.White)) {
+        Column(Modifier.fillMaxSize()) {
+            HomeTopBar(onMenu = onMenu, onSeats = onSeats, onOpenModule = onOpenModule)
+            HeroBanner()
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 102.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp)
+                    .padding(top = 8.dp, bottom = 104.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(cards) { card ->
+                    DashboardCard(card = card, onClick = {
+                        when {
+                            card.title.contains("Expense") -> onExpenses()
+                            card.title.contains("Member") -> onOpenModule("Member Management")
+                            card.title.contains("Collection") -> onOpenModule("Collections")
+                            card.title.contains("Check-in") -> onOpenModule("Attendance")
+                            card.title.contains("Reminder") -> onOpenModule("Reminders")
+                            card.title.contains("Due") -> onOpenModule("Due Amount")
+                            card.title.contains("Follow") -> onOpenModule("Follow-ups")
+                            card.title.contains("Enquiry") -> onOpenModule("Enquiry Management")
+                            card.title.contains("Birthday") -> onOpenModule("Birthdays")
+                            card.title.contains("Anniversar") -> onOpenModule("Anniversaries")
+                            else -> onOpenModule(card.title)
+                        }
+                    })
+                }
             }
         }
+
+        HomeBottomMenu(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            items = listOf(
+                HomeMenuItem("Dashboard", Icons.Outlined.Dashboard, selected = true) { },
+                HomeMenuItem("Members", Icons.Outlined.Groups) { onOpenModule("Member Management") },
+                HomeMenuItem("Seats", Icons.Outlined.EventSeat) { onSeats() },
+                HomeMenuItem("Fees", Icons.Outlined.AccountBalanceWallet) { onExpenses() },
+                HomeMenuItem("Reports", Icons.Outlined.Assessment) { onOpenModule("Reports") }
+            )
+        )
     }
 }
 
@@ -282,6 +305,89 @@ private fun TopBarAction(label: String, accent: Boolean = false, onClick: () -> 
             fontSize = if (label == "MENU") 27.sp else 10.sp,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun HomeBottomMenu(
+    items: List<HomeMenuItem>,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(start = 14.dp, end = 14.dp, bottom = 12.dp)
+            .shadow(
+                elevation = 18.dp,
+                shape = RoundedCornerShape(28.dp),
+                ambientColor = RoyalBlue.copy(alpha = 0.22f),
+                spotColor = RoyalBlue.copy(alpha = 0.28f)
+            ),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, RoyalBlue.copy(alpha = 0.08f), RoundedCornerShape(28.dp))
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                BottomMenuButton(
+                    item = item,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomMenuButton(
+    item: HomeMenuItem,
+    modifier: Modifier = Modifier
+) {
+    val activeGradient = Brush.linearGradient(
+        listOf(Color(0xFF1557B7), Color(0xFF061F62))
+    )
+    val inactiveColor = Color(0xFF718099)
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(22.dp))
+            .background(if (item.selected) activeGradient else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)))
+            .clickable { item.onClick() }
+            .padding(vertical = 9.dp, horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(if (item.selected) 34.dp else 30.dp)
+                .clip(CircleShape)
+                .background(if (item.selected) Color.White.copy(alpha = 0.16f) else RoyalBlue.copy(alpha = 0.07f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                tint = if (item.selected) Color.White else inactiveColor,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = item.label,
+            color = if (item.selected) Color.White else inactiveColor,
+            fontSize = 10.sp,
+            fontWeight = if (item.selected) FontWeight.Black else FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

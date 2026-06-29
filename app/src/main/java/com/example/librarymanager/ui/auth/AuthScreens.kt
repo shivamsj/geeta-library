@@ -171,22 +171,16 @@ internal fun AuthScreen(
             .fillMaxSize()
             .background(Color(0xFFF8F9FC))
     ) {
-        val compact = maxHeight < 740.dp
+        val compact = maxHeight < 760.dp
         val narrow = maxWidth < 380.dp
         val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
         val sidePadding = if (narrow) 14.dp else 20.dp
-        val heroHeight = when {
-            keyboardOpen -> 92.dp
-            isRegister && compact -> 188.dp
-            isRegister -> 220.dp
-            compact -> 178.dp
-            else -> 210.dp
-        }
+        val topSpace = if (keyboardOpen) 72.dp else if (compact) 118.dp else 148.dp
         val formCompact = compact || keyboardOpen
         val helpSize = if (narrow) 46.dp else 52.dp
         val sheetMaxWidth = 440.dp
 
-        AuthPageBackground(heroHeight = heroHeight)
+        AuthPageBackground()
 
         Column(
             modifier = Modifier
@@ -196,14 +190,12 @@ internal fun AuthScreen(
                 .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuthPortalHero(
+            CompactAuthHeader(
                 isRegister = isRegister,
-                compact = compact,
-                narrow = narrow,
                 keyboardOpen = keyboardOpen,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(heroHeight)
+                    .height(topSpace)
                     .padding(horizontal = sidePadding)
             )
 
@@ -211,30 +203,44 @@ internal fun AuthScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = sheetMaxWidth)
-                    .padding(horizontal = sidePadding)
-                    .offset(y = if (keyboardOpen) (-4).dp else (-14).dp),
-                shape = RoundedCornerShape(30.dp),
+                    .padding(horizontal = sidePadding),
+                shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 18.dp)
             ) {
                 Column(
                     modifier = Modifier
-                        .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(30.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(28.dp))
                         .padding(
                             horizontal = if (narrow) 16.dp else 24.dp,
-                            vertical = if (formCompact) 14.dp else 22.dp
+                            vertical = if (formCompact) 16.dp else 24.dp
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(width = 58.dp, height = 6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Brush.horizontalGradient(listOf(DeepNavy, Color(0xFF5275B7))))
+                    Text(
+                        text = if (isRegister) "Create account" else "Welcome back",
+                        color = DeepNavy,
+                        fontSize = if (narrow) 24.sp else 27.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(Modifier.height(if (formCompact) 8.dp else 14.dp))
-                    AuthWelcomeDivider(if (isRegister) "Start setup" else "Welcome back")
-                    Spacer(Modifier.height(if (formCompact) 8.dp else 14.dp))
+                    Text(
+                        text = if (isRegister) {
+                            "Start managing your library with one secure account."
+                        } else {
+                            "Manage members, seats, fees and reports smarter."
+                        },
+                        color = Muted,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 6.dp, bottom = if (formCompact) 14.dp else 18.dp)
+                    )
+
+                    if (!formCompact) {
+                        AuthModeHighlights(isRegister = isRegister)
+                        Spacer(Modifier.height(16.dp))
+                    }
 
                     AuthTabs(
                         isRegister = isRegister,
@@ -249,30 +255,30 @@ internal fun AuthScreen(
                             isRegister = true
                         }
                     )
-                    Spacer(Modifier.height(if (formCompact) 9.dp else 15.dp))
+                    Spacer(Modifier.height(if (formCompact) 14.dp else 18.dp))
 
                     if (isRegister) {
                         RegisterForm(state = authState, viewModel = authViewModel)
                         AuthPrimaryButton(
-                            text = if (authState.isLoading) "Creating Account..." else "Register Now",
+                            text = if (authState.isLoading) "Creating Account..." else "Create Account",
                             onClick = {
                                 focusManager.clearFocus()
                                 authViewModel.register()
                             },
                             enabled = !authState.isLoading,
-                            modifier = Modifier.padding(top = if (formCompact) 10.dp else 18.dp)
+                            modifier = Modifier.padding(top = if (formCompact) 14.dp else 18.dp)
                         )
                     } else {
                         LoginForm(state = authState, viewModel = authViewModel)
                         Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = if (compact) 8.dp else 14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CheckLabel("Remember me", rememberMe) { rememberMe = it }
-                        CheckLabel("I'm Member", memberLogin) { memberLogin = it }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = if (compact) 8.dp else 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CheckLabel("Remember me", rememberMe) { rememberMe = it }
+                            CheckLabel("I'm Member", memberLogin) { memberLogin = it }
                         }
                         AuthPrimaryButton(
                             text = if (authState.isLoading) "Signing In..." else "Login Now",
@@ -281,15 +287,15 @@ internal fun AuthScreen(
                                 authViewModel.login()
                             },
                             enabled = !authState.isLoading,
-                            modifier = Modifier.padding(top = if (compact) 14.dp else 24.dp)
+                            modifier = Modifier.padding(top = if (compact) 14.dp else 22.dp)
                         )
                         Text(
-                            text = "Forgot Password ?",
-                            color = DeepNavy,
-                            fontSize = if (compact) 15.sp else 17.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            text = "Forgot password?",
+                            color = RoyalBlue,
+                            fontSize = if (compact) 14.sp else 15.sp,
+                            fontWeight = FontWeight.Bold,
                             modifier = Modifier
-                                .padding(top = if (compact) 14.dp else 20.dp)
+                                .padding(top = if (compact) 12.dp else 16.dp)
                                 .clickable {
                                     focusManager.clearFocus()
                                     authViewModel.clearFeedback()
@@ -307,7 +313,7 @@ internal fun AuthScreen(
                 }
             }
 
-            Spacer(Modifier.height(if (formCompact) 36.dp else 72.dp))
+            Spacer(Modifier.height(if (keyboardOpen) 18.dp else 72.dp))
         }
 
         if (!keyboardOpen) {
@@ -338,17 +344,13 @@ internal fun ForgotPasswordScreen(
             .fillMaxSize()
             .background(Color(0xFFF8F9FC))
     ) {
-        val narrow = maxWidth < 360.dp
-        val compact = maxHeight < 720.dp
+        val narrow = maxWidth < 380.dp
+        val compact = maxHeight < 760.dp
         val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-        val heroHeight = when {
-            keyboardOpen -> 126.dp
-            compact -> 228.dp
-            else -> 278.dp
-        }
-        val sidePadding = if (narrow) 12.dp else 16.dp
+        val topSpace = if (keyboardOpen) 76.dp else if (compact) 126.dp else 154.dp
+        val sidePadding = if (narrow) 14.dp else 20.dp
 
-        AuthPageBackground(heroHeight)
+        AuthPageBackground()
 
         Column(
             modifier = Modifier
@@ -358,49 +360,55 @@ internal fun ForgotPasswordScreen(
                 .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ForgotPasswordHero(
+            CompactAuthHeader(
+                isRegister = false,
                 keyboardOpen = keyboardOpen,
+                title = "Recover access",
+                subtitle = "Verify your email and return to your workspace.",
                 onBack = onBack,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(heroHeight)
+                    .height(topSpace)
+                    .padding(horizontal = sidePadding)
             )
 
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 440.dp)
-                    .padding(horizontal = sidePadding)
-                    .offset(y = (-28).dp),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.98f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                    .padding(horizontal = sidePadding),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 18.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = if (narrow) 18.dp else 24.dp, vertical = 24.dp),
+                    modifier = Modifier
+                        .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(28.dp))
+                        .padding(horizontal = if (narrow) 18.dp else 24.dp, vertical = if (keyboardOpen) 18.dp else 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(width = 58.dp, height = 6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Brush.horizontalGradient(listOf(DeepNavy, Color(0xFF5275B7))))
-                    )
                     Text(
-                        "Recover your account",
+                        "Reset password",
                         color = DeepNavy,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 16.dp)
+                        fontSize = if (narrow) 24.sp else 27.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center
                     )
                     Text(
-                        "Enter the email linked with your Geeta Library account.",
+                        "Enter your registered email. We will send an OTP to recover your account.",
                         color = Muted,
                         fontSize = 13.sp,
                         lineHeight = 18.sp,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 7.dp, bottom = 20.dp)
+                        modifier = Modifier.padding(top = 7.dp, bottom = if (keyboardOpen) 16.dp else 22.dp)
                     )
+
+                    SecurityNotice(
+                        title = "Password reset",
+                        body = "We will send the recovery instructions only to your registered email."
+                    )
+
+                    Spacer(Modifier.height(if (keyboardOpen) 14.dp else 18.dp))
 
                     IconTextField(
                         value = state.email,
@@ -418,7 +426,7 @@ internal fun ForgotPasswordScreen(
                             focusManager.clearFocus()
                             viewModel.sendPasswordReset()
                         },
-                        modifier = Modifier.padding(top = 22.dp)
+                        modifier = Modifier.padding(top = if (keyboardOpen) 16.dp else 22.dp)
                     )
 
                     state.error?.let { AuthStatusMessage(it, isError = true) }
@@ -426,7 +434,7 @@ internal fun ForgotPasswordScreen(
 
                     Row(
                         modifier = Modifier
-                            .padding(top = 20.dp)
+                            .padding(top = if (keyboardOpen) 14.dp else 20.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .clickable { onBack() }
                             .padding(horizontal = 14.dp, vertical = 8.dp),
@@ -444,7 +452,7 @@ internal fun ForgotPasswordScreen(
                 }
             }
 
-            Spacer(Modifier.height(if (compact) 36.dp else 70.dp))
+            Spacer(Modifier.height(if (keyboardOpen) 18.dp else 70.dp))
         }
 
         if (!keyboardOpen) {
@@ -460,78 +468,17 @@ internal fun ForgotPasswordScreen(
 }
 
 @Composable
-private fun ForgotPasswordHero(
-    keyboardOpen: Boolean,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier) {
-        IconButton(
-            onClick = onBack,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 10.dp, top = 8.dp)
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.1f))
-        ) {
-            Icon(
-                Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Card(
-                modifier = Modifier.size(if (keyboardOpen) 52.dp else 82.dp),
-                shape = RoundedCornerShape(if (keyboardOpen) 15.dp else 22.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-            ) {
-                LogoMark(Modifier.fillMaxSize().padding(5.dp))
-            }
-            Column(Modifier.weight(1f).padding(start = 18.dp)) {
-                Text(
-                    "Forgot Password",
-                    color = Color.White,
-                    fontSize = if (keyboardOpen) 18.sp else 25.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!keyboardOpen) {
-                    Text(
-                        "Securely recover access to your account.",
-                        color = Color.White.copy(alpha = 0.82f),
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(top = 7.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AuthPageBackground(heroHeight: androidx.compose.ui.unit.Dp) {
+private fun AuthPageBackground() {
     Canvas(Modifier.fillMaxSize()) {
-        drawRect(Color(0xFFF8F9FC))
+        drawRect(Color(0xFFF6F8FD))
         drawRect(
-            brush = Brush.verticalGradient(listOf(Color(0xFF062F83), DeepNavy)),
-            size = Size(size.width, heroHeight.toPx())
+            brush = Brush.verticalGradient(listOf(Color(0xFF0D5ED1), Color(0xFF073D9D), DeepNavy)),
+            size = Size(size.width, size.height * 0.34f)
         )
 
         val shelfColor = Color.White.copy(alpha = 0.055f)
-        val heroBottom = heroHeight.toPx()
         for (row in 0..4) {
-            val y = heroBottom * (0.28f + row * 0.16f)
+            val y = size.height * (0.04f + row * 0.055f)
             drawLine(shelfColor, Offset(0f, y), Offset(size.width, y), 4f)
             for (column in 0..9) {
                 val left = column * size.width / 10f + (row % 2) * 8f
@@ -545,175 +492,107 @@ private fun AuthPageBackground(heroHeight: androidx.compose.ui.unit.Dp) {
             }
         }
 
-        drawCircle(Color(0xFF0A4FAF).copy(alpha = 0.28f), size.width * 0.42f, Offset(size.width * 0.08f, heroBottom * 0.1f))
-        drawCircle(Color.White.copy(alpha = 0.9f), size.width * 0.8f, Offset(size.width * 0.12f, size.height * 1.03f))
-        drawCircle(Color(0xFFE9EDF5).copy(alpha = 0.7f), size.width * 0.66f, Offset(size.width * 0.95f, size.height * 0.88f))
+        drawCircle(Color(0xFF4DA3FF).copy(alpha = 0.23f), size.width * 0.44f, Offset(size.width * 0.02f, size.height * 0.04f))
+        drawCircle(LibraryGold.copy(alpha = 0.13f), size.width * 0.34f, Offset(size.width * 0.98f, size.height * 0.16f))
+        drawCircle(Color.White.copy(alpha = 0.86f), size.width * 0.86f, Offset(size.width * 0.03f, size.height * 1.02f))
+        drawCircle(Color(0xFFE9EDF5).copy(alpha = 0.72f), size.width * 0.66f, Offset(size.width * 0.96f, size.height * 0.82f))
     }
 }
 
 @Composable
-private fun AuthPortalHero(
+private fun CompactAuthHeader(
     isRegister: Boolean,
-    compact: Boolean,
-    narrow: Boolean,
     keyboardOpen: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    subtitle: String? = null,
+    onBack: (() -> Unit)? = null
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        val heroCardHeight = when {
-            keyboardOpen -> 72.dp
-            compact -> 146.dp
-            else -> 166.dp
-        }
-        val logoSize = when {
-            keyboardOpen -> 44.dp
-            narrow -> 62.dp
-            compact -> 68.dp
-            else -> 74.dp
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(heroCardHeight)
-                .shadow(12.dp, RoundedCornerShape(26.dp))
-                .clip(RoundedCornerShape(26.dp))
-        ) {
-            Canvas(Modifier.fillMaxSize()) {
-                drawRect(brush = Brush.linearGradient(listOf(Color(0xFF0D64D8), Color(0xFF073A9D), DeepNavy)))
-                val shelf = Color.White.copy(alpha = 0.08f)
-                repeat(4) { row ->
-                    val y = size.height * (0.3f + row * 0.2f)
-                    drawLine(shelf, Offset(0f, y), Offset(size.width, y), 3f)
-                    repeat(12) { column ->
-                        val cell = size.width / 12f
-                        val bookHeight = 18f + ((row * 17 + column * 11) % 34)
-                        drawRoundRect(
-                            color = Color.White.copy(alpha = 0.045f),
-                            topLeft = Offset(column * cell + 5f, y - bookHeight),
-                            size = Size(cell * 0.6f, bookHeight),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f)
-                        )
-                    }
-                }
-                drawCircle(
-                    color = Color(0xFF0A76D8).copy(alpha = 0.28f),
-                    radius = size.width * 0.34f,
-                    center = Offset(size.width * 0.88f, size.height * 0.12f)
-                )
-                drawCircle(
-                    color = LibraryGold.copy(alpha = 0.16f),
-                    radius = size.width * 0.22f,
-                    center = Offset(size.width * 0.04f, size.height * 0.98f)
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        onBack?.let {
+            IconButton(
+                onClick = it,
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.12f))
+                    .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(21.dp)
                 )
             }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = if (narrow) 14.dp else 18.dp, vertical = if (keyboardOpen) 8.dp else 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Card(
-                    modifier = Modifier.size(logoSize),
-                    shape = RoundedCornerShape(if (keyboardOpen) 14.dp else 20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    LogoMark(modifier = Modifier.fillMaxSize().padding(5.dp))
+            Spacer(Modifier.width(10.dp))
+        }
+        Card(
+            modifier = Modifier.size(if (keyboardOpen) 46.dp else 62.dp),
+            shape = RoundedCornerShape(if (keyboardOpen) 15.dp else 18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        ) {
+            LogoMark(modifier = Modifier.fillMaxSize().padding(5.dp))
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .padding(start = 14.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (!keyboardOpen) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    HeaderPill(if (isRegister) "NEW SETUP" else "SECURE")
+                    HeaderPill("GEETA LIBRARY")
                 }
-
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = if (narrow) 12.dp else 16.dp, end = if (narrow) 0.dp else 8.dp)
-                ) {
-                    if (!keyboardOpen) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            PortalBadge(if (isRegister) "NEW" else "EXISTING")
-                            PortalBadge("SECURE")
-                        }
-                    }
-                    Text(
-                        text = if (isRegister) {
-                            if (keyboardOpen) "Create account" else "Create Library account"
-                        } else {
-                            if (narrow) "Admin Portal" else "Library Admin"
-                        },
-                        color = Color.White,
-                        fontSize = if (keyboardOpen) 16.sp else if (narrow) 20.sp else 24.sp,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = if (narrow) 22.sp else 26.sp,
-                        modifier = Modifier.padding(top = if (keyboardOpen) 3.dp else 8.dp)
-                    )
-                    if (!keyboardOpen) {
-                        Text(
-                            text = if (isRegister) {
-                                "Create an admin account and start managing faster."
-                            } else {
-                                "Manage members, seats, fees and reports from one place."
-                            },
-                            color = Color.White.copy(alpha = 0.84f),
-                            fontSize = if (narrow) 12.sp else 13.sp,
-                            lineHeight = 17.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 5.dp)
-                        )
-                    }
-                }
-
-                if (!keyboardOpen && !compact && !narrow) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                    }
-                }
+            }
+            Text(
+                text = title ?: "Geeta Library",
+                color = Color.White,
+                fontSize = if (keyboardOpen) 18.sp else 23.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = if (keyboardOpen) 0.dp else 8.dp)
+            )
+            if (!keyboardOpen) {
+                Text(
+                    text = subtitle ?: if (isRegister) {
+                        "Admin setup workspace"
+                    } else {
+                        "Library admin workspace"
+                    },
+                    color = Color.White.copy(alpha = 0.82f),
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PortalBadge(text: String) {
+private fun HeaderPill(text: String) {
     Row(
         modifier = Modifier
-            .border(1.dp, Color.White.copy(alpha = 0.38f), RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.08f))
-            .padding(horizontal = 7.dp, vertical = 4.dp),
+            .background(Color.White.copy(alpha = 0.11f))
+            .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(Icons.Outlined.Security, contentDescription = null, tint = LibraryGold, modifier = Modifier.size(11.dp))
-        Text(text, color = Color.White.copy(alpha = 0.94f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun AuthWelcomeDivider(title: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(Modifier.weight(1f).height(1.dp).background(Border))
-        Text(
-            text = title,
-            color = DeepNavy,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier
-                .clip(RoundedCornerShape(14.dp))
-                .background(Brush.horizontalGradient(listOf(RoyalBlue.copy(alpha = 0.08f), LibraryGold.copy(alpha = 0.12f))))
-                .padding(horizontal = 14.dp, vertical = 6.dp)
-        )
-        Box(Modifier.weight(1f).height(1.dp).background(Border))
+        Icon(Icons.Outlined.Verified, contentDescription = null, tint = LibraryGold, modifier = Modifier.size(11.dp))
+        Text(text, color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -736,6 +615,34 @@ private fun AuthStatusMessage(message: String, isError: Boolean) {
 }
 
 @Composable
+private fun SecurityNotice(title: String, body: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brush.horizontalGradient(listOf(Color(0xFFF6FAFF), Color(0xFFFFFBF1))))
+            .border(1.dp, RoyalBlue.copy(alpha = 0.09f), RoundedCornerShape(18.dp))
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(RoyalBlue.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Outlined.Security, contentDescription = null, tint = RoyalBlue, modifier = Modifier.size(20.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, color = DeepNavy, fontSize = 13.sp, fontWeight = FontWeight.Black)
+            Text(body, color = Muted, fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 2.dp))
+        }
+    }
+}
+
+@Composable
 private fun AuthHelpButton(size: androidx.compose.ui.unit.Dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
@@ -747,6 +654,58 @@ private fun AuthHelpButton(size: androidx.compose.ui.unit.Dp, onClick: () -> Uni
         contentAlignment = Alignment.Center
     ) {
         Text("?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+private fun AuthModeHighlights(isRegister: Boolean) {
+    val items = if (isRegister) {
+        listOf(
+            Triple("Profile", Icons.Outlined.Person, RoyalBlue),
+            Triple("Seats", Icons.Outlined.EventSeat, Color(0xFF0B7A36)),
+            Triple("Reports", Icons.Outlined.Assessment, LibraryGold)
+        )
+    } else {
+        listOf(
+            Triple("Secure", Icons.Outlined.Security, RoyalBlue),
+            Triple("Members", Icons.Outlined.Groups, Color(0xFF0B7A36)),
+            Triple("Fees", Icons.Outlined.AccountBalanceWallet, LibraryGold)
+        )
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        items.forEach { (label, icon, color) ->
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(color.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(15.dp))
+                }
+                Text(
+                    label,
+                    color = Muted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
+            }
+        }
     }
 }
 
@@ -784,7 +743,7 @@ private fun AuthTabs(isRegister: Boolean, onLogin: () -> Unit, onRegister: () ->
                 .clickable { onRegister() },
             contentAlignment = Alignment.Center
         ) {
-            Text("Register", color = if (isRegister) DeepNavy else Muted, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            Text("Sign Up", color = if (isRegister) DeepNavy else Muted, fontSize = 16.sp, fontWeight = FontWeight.Black)
         }
     }
 }
